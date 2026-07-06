@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  # 1. Next.js Frontend Application
+  frontend:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:5000
+    depends_on:
+      - backend
+
+  # 2. Express Backend API Gateway
+  backend:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DATABASE_URL=postgresql://careeros_user:careeros_pass@postgres:5432/careeros_db
+      - MONGO_URI=mongodb://mongodb:2717/careeros_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=careeros-super-secure-secret-token
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+
+  # 3. PostgreSQL Database with PGVector extensions
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=careeros_user
+      - POSTGRES_PASSWORD=careeros_pass
+      - POSTGRES_DB=careeros_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 4. MongoDB Database
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  # 5. Redis Cache Staging
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  mongodata:
+  redisdata:
